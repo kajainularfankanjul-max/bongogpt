@@ -3,111 +3,121 @@ import { useState } from 'react'
 
 export default function Home() {
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<{role: string, content: string}[]>([])
+  const [messages, setMessages] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [listening, setListening] = useState(false)
   const [imageLoading, setImageLoading] = useState(false)
-  const [generatedImage, setGeneratedImage] = useState('')
+  const [listening, setListening] = useState(false)
 
-  const startListening = () => {
-    const recognition = new (window as any).webkitSpeechRecognition()
-    recognition.lang = 'bn-BD'
-    recognition.onstart = () => setListening(true)
-    recognition.onresult = (e: any) => {
-      setInput(e.results[0][0].transcript)
-      setListening(false)
-    }
-    recognition.start()
-  }
-
-  const speakReply = (text: string) => {
-    window.speechSynthesis.cancel()
-    const speech = new SpeechSynthesisUtterance(text)
-    speech.lang = 'bn-BD'
-    speech.rate = 0.85
-    speech.pitch = 1.1
-    window.speechSynthesis.speak(speech)
-  }
-
-  async function sendMessage() {
-    if (!input.trim()) return
-    const userMsg = input
-    setMessages(prev => [...prev, {role: 'user', content: userMsg}])
+  // Chat - "পাঠাও" Button
+  const sendMessage = async () => {
+    if (!input || loading || imageLoading) return
+    const userText = input
+    setMessages(prev => [...prev, { role: 'boss', text: userText }])
     setInput('')
     setLoading(true)
 
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: userMsg })
-    })
-    const data = await res.json()
-    setMessages(prev => [...prev, {role: 'bongo', content: data.reply}])
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText })
+      })
+      const data = await res.json()
+      setMessages(prev => [...prev, { role: 'bongo', text: data.reply }])
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'bongo', text: 'Boss, Network Error 😭' }])
+    }
     setLoading(false)
-    speakReply(data.reply)
   }
 
-  async function generateImage() {
-    if (!input.trim()) return
+  // Image - "ছবি বানাও" Button
+  const generateImage = async () => {
+    if (!input || loading || imageLoading) return
+    const userText = input
+    setMessages(prev => [...prev, { role: 'boss', text: userText }])
+    setInput('')
     setImageLoading(true)
-    setGeneratedImage('')
+
     try {
       const res = await fetch('/api/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: input })
+        body: JSON.stringify({ prompt: userText })
       })
       const data = await res.json()
-      setGeneratedImage(data.image)
-      setInput('')
-    } catch (err) {
-      alert('ছবি বানাতে সমস্যা Boss')
+      if (data.image) {
+        setMessages(prev => [...prev, { role: 'bongo', image: data.image }])
+      } else {
+        setMessages(prev => [...prev, { role: 'bongo', text: 'Boss, ছবি বানাতে পারলাম না 😭 API Token Check করেন' }])
+      }
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'bongo', text: 'Boss, Server Error 😭' }])
     }
     setImageLoading(false)
   }
 
+  // Voice Input
+  const startListening = () => {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert('Boss, আপনার Browser এ Voice কাজ করে না')
+      return
+    }
+    const recognition = new (window as any).webkitSpeechRecognition()
+    recognition.lang = 'bn-BD'
+    recognition.onstart = () => setListening(true)
+    recognition.onresult = (event: any) => {
+      setInput(event.results[0][0].transcript)
+    }
+    recognition.onend = () => setListening(false)
+    recognition.start()
+  }
+
   return (
     <main className="min-h-screen bg-black text-white p-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-6 border-b border-green-500 pb-4">
-          <h1 className="text-5xl font-bold text-green-400 mb-2">BongoGPT 🕌</h1>
-          <p className="text-gray-400">Bangladesh এর প্রথম Boss AI | ChatGPT Killer</p>
-        </div>
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-4xl font-bold text-center mb-2">BongoGPT 🕌</h1>
+        <p className="text-center text-green-400 mb-6">Bangladesh এর প্রথম Boss AI | ChatGPT Killer</p>
 
-        <div className="space-y-4 mb-4 max-h-[60vh] overflow-y-auto">
+        <div className="bg-gray-900 rounded-lg p-4 mb-4 min-h-[400px] border border-green-500">
           {messages.map((msg, i) => (
-            <div key={i} className={`p-4 rounded-lg ${msg.role === 'user'? 'bg-blue-900 ml-8' : 'bg-gray-900 border border-green-500 mr-8'}`}>
-              <div className="flex justify-between items-start mb-2">
-                <p className="font-bold text-green-400">
-                  {msg.role === 'user'? '👑 Boss:' : '🕌 BongoGPT:'}
-                </p>
-                {msg.role === 'bongo' && (
-                  <button onClick={() => speakReply(msg.content)} className="text-xs bg-green-600 px-2 py-1 rounded">
-                    🔊 শুনুন
-                  </button>
-                )}
-              </div>
-              <p className="whitespace-pre-wrap">{msg.content}</p>
+            <div key={i} className="mb-4">
+              {msg.role === 'boss' && (
+                <div className="text-right">
+                  <span className="bg-green-600 px-3 py-2 rounded-lg inline-block">
+                    👑 Boss: {msg.text}
+                  </span>
+                </div>
+              )}
+              {msg.role === 'bongo' && (
+                <div className="text-left">
+                  <span className="bg-gray-800 px-3 py-2 rounded-lg inline-block">
+                    🕌 BongoGPT:
+                    {msg.text && <p className="mt-1">{msg.text}</p>}
+                    {msg.image && (
+                      <div className="mt-2">
+                        <img src={msg.image} alt="Generated" className="rounded-lg max-w-full" />
+                        <a href={msg.image} download="bongogpt.png">
+                          <button className="mt-2 bg-green-600 px-3 py-1 rounded">📥 Download</button>
+                        </a>
+                      </div>
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
           ))}
-          {loading && <div className="text-green-400 animate-pulse">BongoGPT ভাবতেছে... 🧠</div>}
+          {loading && <p className="text-center text-yellow-400">💬 ভাবতেছে...</p>}
+          {imageLoading && <p className="text-center text-purple-400">🎨 বানাচ্ছে... 30 সেকেন্ড লাগবে Boss...</p>}
         </div>
 
-        {generatedImage && (
-          <div className="mt-4 p-4 bg-gray-900 rounded-lg border-2 border-purple-500 mb-4">
-            <p className="text-purple-400 font-bold mb-2">🎨 BongoGPT এর বানানো ছবি:</p>
-            <img src={generatedImage} alt="Generated" className="w-full rounded-lg" />
-            <a href={generatedImage} download="bongogpt.png" className="block text-center mt-3 bg-purple-600 p-3 rounded-lg font-bold hover:bg-purple-500">⬇️ Download Boss</a>
-          </div>
-        )}
-
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-3">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
             placeholder="Boss, কিছু বলেন..."
             className="flex-1 p-4 bg-gray-900 rounded-lg border border-green-500 focus:outline-none focus:border-green-400"
+            disabled={loading || imageLoading}
           />
           <button
             onClick={startListening}
@@ -118,17 +128,17 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="flex gap-2 mt-3">
+        <div className="flex gap-2">
           <button
             onClick={sendMessage}
-            disabled={loading ||!input}
+            disabled={loading || imageLoading ||!input}
             className="flex-1 p-4 bg-green-600 rounded-lg font-bold disabled:bg-gray-700 hover:bg-green-500"
           >
-            {loading? '⏳ ভাবতেছে...' : '💬 পাঠাও'}
+            {loading? '💬 ভাবতেছে...' : '💬 পাঠাও'}
           </button>
           <button
             onClick={generateImage}
-            disabled={imageLoading||!input}
+            disabled={imageLoading || loading ||!input}
             className="flex-1 p-4 bg-purple-600 rounded-lg font-bold disabled:bg-gray-700 hover:bg-purple-500"
           >
             {imageLoading? '🎨 বানাচ্ছে...' : '🎨 ছবি বানাও'}
