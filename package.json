@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "groq-sdk": "^0.5.0",
-"replicate": "^0.29.1",
+    "@google/generative-ai": "^0.21.0",
+    "replicate": "^0.29.1",
     "next": "14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
