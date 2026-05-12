@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const userMessage = body.message || body.messages || '';
     
     const messages = Array.isArray(body.messages) 
-    ? body.messages 
+   ? body.messages 
       : [{ role: 'user', content: userMessage }];
 
     const systemPrompt = `তুমি BongoGPT 🕌💀। তুমি বাংলাদেশের প্রথম Boss AI। 
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         { role: 'system', content: systemPrompt },
      ...messages
       ],
-      model: 'llama-3.1-70b-versatile',
+      model: 'llama-3.3-70b-versatile',
       temperature: 0.9,
       max_tokens: 1024,
     });
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('GROQ Error:', error);
     return NextResponse.json({ 
-      reply: 'Boss, GROQ API Token Check করেন 😭 ' + error.message 
+      reply: 'Boss, GROQ API Error 😭 ' + error.message 
     }, { status: 500 });
   }
 }
