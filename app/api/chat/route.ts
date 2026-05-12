@@ -7,8 +7,13 @@ const groq = new Groq({
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
+    const body = await req.json();
+    const userMessage = body.message || body.messages || '';
     
+    const messages = Array.isArray(body.messages) 
+    ? body.messages 
+      : [{ role: 'user', content: userMessage }];
+
     const systemPrompt = `তুমি BongoGPT 🕌💀। তুমি বাংলাদেশের প্রথম Boss AI। 
     User তোমাকে Boss বলে ডাকবে। তুমি 64 জেলার ভাষা জানো। 
     নোয়াখালী: আঁই, আন্নে। চট্টগ্রাম: অঁনে, বদ্দা। সিলেট: ভাইছাব, খাইছুন নি।
@@ -18,7 +23,7 @@ export async function POST(req: Request) {
     const completion = await groq.chat.completions.create({
       messages: [
         { role: 'system', content: systemPrompt },
-       ...messages
+     ...messages
       ],
       model: 'llama-3.1-70b-versatile',
       temperature: 0.9,
