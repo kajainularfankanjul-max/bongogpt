@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
+export const runtime = 'edge'
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const SERPER_API = process.env.SERPER_API_KEY!
 
@@ -53,6 +55,9 @@ export async function POST(req: Request) {
 User প্রশ্ন: ${userQ}
 উত্তর:`
 
-  const result = await model.generateContentStream(prompt)
-  return new Response(result.stream)
+  const result = await model.generateContent(prompt)
+  const response = await result.response
+  const text = response.text()
+  
+  return new Response(text)
 }
