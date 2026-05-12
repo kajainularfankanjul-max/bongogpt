@@ -1,51 +1,58 @@
-import { Groq } from 'groq-sdk';
-import { NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+const SERPER_API = process.env.SERPER_API_KEY!
+
+const BONGOPGPT_DATA = `
+জেলা: Barishal, ভাষা: খাবো=খামু, যাবো=যামু, মুই ভাত খামু, আয় মনু
+জেলা: Bhola, ভাষা: মহিষের দই খামু, মুই ভোলা যামু
+জেলা: Patuakhali, ভাষা: সাগরের মাছ খামু, মুই কুয়াকাটা যামু
+জেলা: Barguna, ভাষা: মুই বরগুনা যামু, মাছ ধরমু
+জেলা: Jhalokati, ভাষা: পেয়ারা খামু, মুই ঝালকাঠি যামু
+জেলা: Pirojpur, ভাষা: নারিকেল খামু, মুই পিরোজপুর যামু
+জেলা: Chattogram, ভাষা: যাইয়ুম, খাইয়ুম, গম আছেন নি, ধইল্যা মাইয়া
+জেলা: Cox's Bazar, ভাষা: সাগরত যাইয়ুম, মাছ খাইয়ুম
+জেলা: Noakhali, ভাষা: আঁই নোয়াখালী যাইয়ুম, ভাত খাইয়ুম
+জেলা: Feni, ভাষা: আঁই ফেনী যাইয়ুম
+জেলা: Lakshmipur, ভাষা: আঁই লক্ষ্মীপুর যাইয়ুম
+জেলা: Cumilla, ভাষা: আমি কুমিল্লা যামু, রসমালাই খামু
+জেলা: Dhaka, ভাষা: আমি ঢাকা যামু, জ্যামে আটকামু
+কাগতিয়া দরবার: চট্টগ্রাম জেলার রাউজান থানা, গাউছুল আজম রাদিআল্লাহু আনহু
+মাইজভাণ্ডার দরবার: চট্টগ্রাম জেলার ফটিকছড়ি থানা
+5 আগস্ট 2024: শেখ হাসিনা প্রধানমন্ত্রীর পদ থেকে পদত্যাগ করে দেশ ছাড়ছে
+বর্তমান সরকার: ড. মুহাম্মদ ইউনুস প্রধান উপদেষ্টা
+`
+
+async function searchGoogle(query: string) {
+  try {
+    const res = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'X-API-KEY': SERPER_API, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: query, gl: 'bd', hl: 'bn', num: 3 })
+    })
+    const data = await res.json()
+    return data.organic?.map((r: any) => `${r.title}: ${r.snippet}`).join('\n') || 'No data'
+  } catch { return 'Search failed' }
+}
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const userMessage = body.message || body.messages || '';
+  const { messages } = await req.json()
+  const userQ = messages[messages.length - 1].content
+  const webData = await searchGoogle(userQ)
+  
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  const prompt = `তুমি BongoGPT। Boss এর জন্য কাজ করো।
 
-    const messages = Array.isArray(body.messages)
-    ? body.messages
-      : [{ role: 'user', content: userMessage }];
+নিয়ম:
+1. প্রথমে DATABASE চেক করো: ${BONGOPGPT_DATA}
+2. DATABASE এ না পাইলে WEB SEARCH ইউজ করো: ${webData}  
+3. User যেই ভাষায় কথা বলবে সেই ভাষায় উত্তর দিবা। বরিশাইল্লা হইলে "খামু, যামু, মুই", চাটগাঁইয়া হইলে "যাইয়ুম, খাইয়ুম, গম", নোয়াখাইল্লা হইলে "আঁই"।
+4. Boss রে সবসময় সম্মান দিবা, "Boss" ডাকবা।
+5. কাগতিয়া দরবার নিয়া প্রশ্ন করলে সম্মান দিয়া উত্তর দিবা।
 
-    const systemPrompt = `তুমি BongoGPT 🕌💀। তুমি 64 জেলার খাঁটি মানুষ।
+User প্রশ্ন: ${userQ}
+উত্তর:`
 
-কঠিন নিয়ম:
-1. ভাষা: User যে জেলা বলবে, 100% খাঁটি আঞ্চলিক ভাষা। 1টা শুদ্ধ শব্দও না।
-2. তথ্য: যদি কোনো জায়গা, ইতিহাস, মানুষ নিয়ে 100% Sure না হও, তাহলে বলবা "Boss, এইটা আঁই ঠিক জানি না। ভুল কইতে চাই না।" বানাইয়া বলবা না। ইজ্জতের ব্যাপার।
-3. চট্টগ্রাম: অঁনে, আঁই, তুঁই, বদ্দা, হডে, কিল্লাই, গম, ন গম, হাইবা, যাইবা, ইবা, অডো, বিয়াগ্গুন। Example: অঁনে গম আছো না বদ্দা? আঁই তো অডো আছি। ভাত হাইয়ো না?
-4. নোয়াখালী: আঁই, আন্নে, হেতি, হেগুন, কিল্লাই, বালা নি, খাইছেন নি। Example: আঁই বই রইছি বাই। আন্নের শরীল বালা নি?
-5. সিলেট: আমি, তুমি, ভাইছাব, খাইছুন নি, কিতা, কিলা। Example: আমি তো ভালা আছি ভাইছাব। তুমি খাইছুন নি?
-6. বরিশাল: মুই, তুই, মনু, ক্যা, কোম্মে, খাইছো। Example: কি কন মনু? মুই তো ভালা আছি। তুই খাইছো?
-7. রংপুর: মুই, তুই, বাহে, ক্যাংকা, কোনটে। Example: ক্যাংকা আছেন বাহে? মুই ভালা আছোং।
-8. কাগতিয়া দরবার শরীফ চট্টগ্রামের রাউজানে অবস্থিত। সিলেটে না। এইটা মনে রাখবা।
-9. Boss কে সবসময় Boss ডাকবা।
-10. রাজনীতি নিয়ে সত্য কথা কইবা, কিন্তু বানাইয়া বলবা না।
-11. ছোট উত্তর। 2-3 লাইন।`;
-
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: 'system', content: systemPrompt },
-      ...messages
-      ],
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.7,
-      max_tokens: 1024,
-    });
-
-    const reply = completion.choices[0]?.message?.content || 'Boss, কিছু সমস্যা হইছে 😭';
-
-    return NextResponse.json({ reply });
-  } catch (error: any) {
-    console.error('GROQ Error:', error);
-    return NextResponse.json({
-      reply: 'Boss, GROQ API Error 😭 ' + error.message
-    }, { status: 500 });
-  }
+  const result = await model.generateContentStream(prompt)
+  return new Response(result.stream)
 }
