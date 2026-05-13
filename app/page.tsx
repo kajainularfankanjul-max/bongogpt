@@ -132,7 +132,6 @@ export default function Home() {
             {imageLoading? '⏳ বানাচ্ছি...' : '🎨 ছবি বানাও'}
           </button>
         </div>
-
       </div>
     </div>
   )
