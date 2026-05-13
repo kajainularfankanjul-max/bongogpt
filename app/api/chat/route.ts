@@ -4,20 +4,24 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(req) {
   try {
-    const { messages } = await req.json();
+    const body = await req.json();
+    const messages = body.messages || [];
     
-    const model = genAI.getGenerativeModel({ 
-      model: process.env.GEMINI_MODEL || "gemini-1.5-flash" 
+    if (!messages.length) {
+      return Response.json({ error: "No message provided" }, { status: 400 });
+    }
+
+    const model = genAI.getGenerativeModel({
+      model: process.env.GEMINI_MODEL || "gemini-1.5-flash"
     });
 
     const lastMessage = messages[messages.length - 1].content;
-    
     const result = await model.generateContent(lastMessage);
     const response = result.response.text();
 
-    return Response.json({ 
+    return Response.json({
       role: "assistant",
-      content: response 
+      content: response
     });
 
   } catch (error) {
