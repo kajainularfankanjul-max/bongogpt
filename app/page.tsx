@@ -8,7 +8,6 @@ export default function Home() {
   const [imageLoading, setImageLoading] = useState(false)
   const [listening, setListening] = useState(false)
 
-  // Chat - "মাও" Button
   const sendMessage = async () => {
     if (!input || loading || imageLoading) return
     const userText = input
@@ -32,7 +31,6 @@ export default function Home() {
     setLoading(false)
   }
 
-  // Image - "ছবি বানাও" Button
   const generateImage = async () => {
     if (!input || loading || imageLoading) return
     const userText = input
@@ -58,7 +56,6 @@ export default function Home() {
     setImageLoading(false)
   }
 
-  // Voice Input
   const startListening = () => {
     if (!('webkitSpeechRecognition' in window)) {
       alert('Boss, আপনার Browser এ Voice কাজ করে না')
@@ -118,30 +115,7 @@ export default function Home() {
       </div>
     </div>
   )
-}                  </span>
-                </div>
-              )}
-            </div>
-          ))}
-          {loading && <p className="text-center text-yellow-400">💬 ভাবতেছে...</p>}
-          {imageLoading && <p className="text-center text-purple-400">🎨 বানাচ্ছে... 30 সেকেন্ড লাগবে Boss...</p>}
-        </div>
-
-        <div className="flex gap-2 mb-3">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Boss, কিছু বলেন..."
-            className="flex-1 p-4 bg-gray-900 rounded-lg border border-green-500 focus:outline-none focus:border-green-400"
-            disabled={loading || imageLoading}
-          />
-          <button
-            onClick={startListening}
-            disabled={listening}
-            className="p-4 bg-green-600 rounded-lg font-bold disabled:bg-gray-700 hover:bg-green-500"
-          >
-            {listening? '🎤 শুনছি...' : '🎤'}
+}            {listening? '🎤 শুনছি...' : '🎤'}
           </button>
         </div>
 
