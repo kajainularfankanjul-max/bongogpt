@@ -8,7 +8,7 @@ export default function Home() {
   const [imageLoading, setImageLoading] = useState(false)
   const [listening, setListening] = useState(false)
 
-  // Chat - "পাঠাও" Button
+  // Chat - "মাও" Button
   const sendMessage = async () => {
     if (!input || loading || imageLoading) return
     const userText = input
@@ -20,10 +20,12 @@ export default function Home() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText })
+        body: JSON.stringify({ 
+          messages: [...messages, { role: 'user', content: userText }] 
+        })
       })
       const data = await res.json()
-      setMessages(prev => [...prev, { role: 'bongo', text: data.reply }])
+      setMessages(prev => [...prev, { role: 'bongo', text: data.content }])
     } catch (e) {
       setMessages(prev => [...prev, { role: 'bongo', text: 'Boss, Network Error 😭' }])
     }
@@ -48,7 +50,7 @@ export default function Home() {
       if (data.image) {
         setMessages(prev => [...prev, { role: 'bongo', image: data.image }])
       } else {
-        setMessages(prev => [...prev, { role: 'bongo', text: 'Boss, ছবি বানাতে পারলাম না 😭 API Token Check করেন' }])
+        setMessages(prev => [...prev, { role: 'bongo', text: 'Boss, ছবি বানাতে পারলাম না 😭 API Token Check করো' }])
       }
     } catch (e) {
       setMessages(prev => [...prev, { role: 'bongo', text: 'Boss, Server Error 😭' }])
@@ -73,35 +75,50 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white p-4">
+    <div className="min-h-screen bg-black text-white p-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-2">BongoGPT 🕌</h1>
+        <h1 className="text-4xl font-bold text-center mb-2">BongoGPT 🥷</h1>
         <p className="text-center text-green-400 mb-6">Bangladesh এর প্রথম Boss AI | ChatGPT Killer</p>
 
-        <div className="bg-gray-900 rounded-lg p-4 mb-4 min-h-[400px] border border-green-500">
+        <div className="bg-gray-900 rounded-lg p-4 mb-4 min-h-[400px] border-green-500">
           {messages.map((msg, i) => (
             <div key={i} className="mb-4">
               {msg.role === 'boss' && (
                 <div className="text-right">
                   <span className="bg-green-600 px-3 py-2 rounded-lg inline-block">
-                    👑 Boss: {msg.text}
+                    {msg.text}
                   </span>
                 </div>
               )}
               {msg.role === 'bongo' && (
                 <div className="text-left">
-                  <span className="bg-gray-800 px-3 py-2 rounded-lg inline-block">
-                    🕌 BongoGPT:
-                    {msg.text && <p className="mt-1">{msg.text}</p>}
-                    {msg.image && (
-                      <div className="mt-2">
-                        <img src={msg.image} alt="Generated" className="rounded-lg max-w-full" />
-                        <a href={msg.image} download="bongogpt.png">
-                          <button className="mt-2 bg-green-600 px-3 py-1 rounded">📥 Download</button>
-                        </a>
-                      </div>
-                    )}
+                  <span className="bg-gray-700 px-3 py-2 rounded-lg inline-block">
+                    {msg.image? <img src={msg.image} alt="generated" /> : msg.text}
                   </span>
+                </div>
+              )}
+            </div>
+          ))}
+          {loading && <p className="text-gray-400">Bongo লিখছে...</p>}
+          {imageLoading && <p className="text-gray-400">ছবি বানাচ্ছে...</p>}
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Boss, কিছু লিখো..."
+            className="flex-1 bg-gray-800 border-green-500 rounded-lg px-4 py-2"
+            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+          />
+          <button onClick={sendMessage} className="bg-green-600 px-4 py-2 rounded-lg">পাঠাও</button>
+          <button onClick={generateImage} className="bg-purple-600 px-4 py-2 rounded-lg">ছবি</button>
+          <button onClick={startListening} className="bg-blue-600 px-4 py-2 rounded-lg">🎤</button>
+        </div>
+      </div>
+    </div>
+  )
+}                  </span>
                 </div>
               )}
             </div>
