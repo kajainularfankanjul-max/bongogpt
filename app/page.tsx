@@ -90,7 +90,7 @@ export default function Home() {
               {msg.role === 'bongo' && (
                 <div className="text-left">
                   <span className="bg-gray-700 px-3 py-2 rounded-lg inline-block">
-                    {msg.image? <img src={msg.image} alt="generated" /> : msg.text}
+                    {msg.image? <img src={msg.image} alt="generated" className="rounded-lg max-w-xs" /> : msg.text}
                   </span>
                 </div>
               )}
@@ -100,42 +100,40 @@ export default function Home() {
           {imageLoading && <p className="text-gray-400">ছবি বানাচ্ছে...</p>}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-3">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Boss, কিছু লিখো..."
-            className="flex-1 bg-gray-800 border-green-500 rounded-lg px-4 py-2"
+            className="flex-1 bg-gray-800 border-green-500 rounded-lg px-4 py-2 outline-none focus:border-green-400"
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           />
-          <button onClick={sendMessage} className="bg-green-600 px-4 py-2 rounded-lg">পাঠাও</button>
-          <button onClick={generateImage} className="bg-purple-600 px-4 py-2 rounded-lg">ছবি</button>
-          <button onClick={startListening} className="bg-blue-600 px-4 py-2 rounded-lg">🎤</button>
-        </div>
-      </div>
-    </div>
-  )
-}            {listening? '🎤 শুনছি...' : '🎤'}
+          <button 
+            onClick={startListening} 
+            className="bg-blue-600 px-4 py-2 rounded-lg"
+          >
+            {listening? '🎙️' : '🎤'}
           </button>
         </div>
 
         <div className="flex gap-2">
-          <button
-            onClick={sendMessage}
+          <button 
+            onClick={sendMessage} 
             disabled={loading || imageLoading ||!input}
-            className="flex-1 p-4 bg-green-600 rounded-lg font-bold disabled:bg-gray-700 hover:bg-green-500"
+            className="flex-1 p-3 bg-green-600 rounded-lg font-bold disabled:bg-gray-700 hover:bg-green-500 transition"
           >
-            {loading? '💬 ভাবতেছে...' : '💬 পাঠাও'}
+            {loading? '⏳ চাপতেছি...' : '🚀 পাঠাও'}
           </button>
-          <button
-            onClick={generateImage}
+          <button 
+            onClick={generateImage} 
             disabled={imageLoading || loading ||!input}
-            className="flex-1 p-4 bg-purple-600 rounded-lg font-bold disabled:bg-gray-700 hover:bg-purple-500"
+            className="flex-1 p-3 bg-purple-600 rounded-lg font-bold disabled:bg-gray-700 hover:bg-purple-500 transition"
           >
-            {imageLoading? '🎨 বানাচ্ছে...' : '🎨 ছবি বানাও'}
+            {imageLoading? '⏳ বানাচ্ছি...' : '🎨 ছবি বানাও'}
           </button>
         </div>
+
       </div>
-    </main>
+    </div>
   )
 }
