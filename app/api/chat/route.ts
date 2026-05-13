@@ -1,45 +1,30 @@
-import { NextResponse } from "next/server"
-import Groq from "groq-sdk"
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-})
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-export async function POST(req: Request) {
+export async function POST(req) {
   try {
-    const { message } = await req.json()
+    const { messages } = await req.json();
+    
+    const model = genAI.getGenerativeModel({ 
+      model: process.env.GEMINI_MODEL || "gemini-1.5-flash" 
+    });
 
-    if (!message) {
-      return NextResponse.json(
-        { reply: "Boss, কিছু তো বলেন 🙂" },
-        { status: 400 }
-      )
-    }
+    const lastMessage = messages[messages.length - 1].content;
+    
+    const result = await model.generateContent(lastMessage);
+    const response = result.response.text();
 
-    const completion = await groq.chat.completions.create({
-      model: "llama3-70b-8192",
-      messages: [
-        {
-          role: "system",
-          content:
-            "তুমি BongoGPT, বাংলাদেশের প্রথম Boss AI। সবসময় বাংলায়, সিলেটি/আঞ্চলিক টোনে, বন্ধুসুলভভাবে উত্তর দাও। ChatGPT Killer ভাইব রাখো।",
-        },
-        {
-          role: "user",
-          content: message,
-        },
-      ],
-      temperature: 0.7,
-    })
+    return Response.json({ 
+      role: "assistant",
+      content: response 
+    });
 
-    const reply = completion.choices[0]?.message?.content || "Boss, একটু সমস্যা হইছে। আবার বলেন তো 😅"
-    return NextResponse.json({ reply })
-
-  } catch (err) {
-    console.error("Groq API Error:", err)
-    return NextResponse.json(
-      { reply: "Boss, সার্ভারে একটু ঝামেলা হইছে। ১০ সেকেন্ড পর আবার ট্রাই করেন 🙂" },
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    return Response.json(
+      { error: "Gemini API তে সমস্যা হইছে" },
       { status: 500 }
-    )
+    );
   }
 }
